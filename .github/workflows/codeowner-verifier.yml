@@ -1,0 +1,45 @@
+name: 'Codeowner Verifier Workflow'
+
+on: pull_request
+
+permissions:
+  contents: read
+
+jobs:
+  codeowner-verifier-workflow:
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
+        with:
+          fetch-depth: 0
+
+      - name: Identify Changed Files
+        id: diff
+        run: |
+          git_diff="$(git diff --name-only origin/$GITHUB_BASE_REF $GITHUB_SHA)" 
+          git_diff_fixed="$(echo $git_diff | tr '\n' ' ' )"
+          echo "git_diff=$git_diff_fixed" >> $GITHUB_OUTPUT
+
+      - name: Identify Deleted Files
+        id: deleted
+        run: |
+          git_diff_deleted="$(git diff --name-only --diff-filter=D origin/$GITHUB_BASE_REF $GITHUB_SHA)"
+          git_diff_deleted_fixed="$(echo $git_diff_deleted | tr '\n' ' ' )"
+          echo "git_diff_deleted=$git_diff_deleted_fixed" >> $GITHUB_OUTPUT
+
+      - name: Codeowner Verifier
+        id: codeownerVerifier
+        uses: ncino/codeowner-verifier@90e8ac2dc15343c9233ce2567c9d11b5774fa6a2
+        with:
+          changedFiles: ${{ steps.diff.outputs.git_diff }}
+          deletedFiles: ${{ steps.deleted.outputs.git_diff_deleted }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.DEVOPS_GITHUB_TOKEN }}
+
+      - name: Finish and Output Time
+        run: |
+          echo "Codeowner Verifier has completed."
+          echo "Time: ${{ steps.codeownerVerifier.outputs.timestamp }}"

@@ -1,0 +1,86 @@
+name: Semgrep
+
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  semgrep:
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
+        with:
+          fetch-depth: 0
+
+      - name: Get PR Diff
+        run: |
+          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d "/" -f 2)
+          git config --global --add safe.directory /__w/"$REPO_NAME"/"$REPO_NAME"
+          git fetch origin ${{ github.base_ref }}
+          git diff origin/${{ github.base_ref }} --diff-filter=A | tee pr.diff
+
+      - name: Check for Suppressions
+        run: |
+          if grep -q "nosemgrep" pr.diff; then
+            if ! grep -qE "nosemgrep:\s[\.A-Za-z\-]*\s[A-Za-z\s]*" pr.diff; then
+              echo "INVALID_SUPPRESSION_FOUND=1" >> $GITHUB_ENV
+            else
+              echo "VALID_SUPPRESSION_FOUND=1" >> $GITHUB_ENV
+            fi
+          fi
+          rm pr.diff
+
+      - name: Comment on PR if an Invalid Suppression is Found
+        if: env.INVALID_SUPPRESSION_FOUND == 1
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410
+        with:
+          github-token: ${{ secrets.BOBBY_TABLES_PAT }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body:`> [!WARNING]
+                \*\*The Semgrep scan has detected an invalid suppression.\*\*
+              \>
+              Every Semgrep suppression must suppress a specific rule and have a clear justification. The expected format of a Semgrep suppression is as follows:\n\`nosemgrep: some-rule-id here is a justification for the suppression\`
+              \>
+              \> _This pull request will remain blocked to prevent invalid suppressions from being merged in. Please contact @ncino/product-security or join [#help-product-security](https://ncino.slack.com/archives/C02G4R09NUU) for assistance._`
+            })
+
+      - name: Notify Slack Channel if a Valid Suppression is Found
+        if: env.VALID_SUPPRESSION_FOUND == 1
+        uses: slackapi/slack-github-action@e28cf165c92ffef168d23c5c9000cffc8a25e117
+        with:
+          payload: |
+            {
+              "text": "Semgrep Suppression Alert: \n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Semgrep Suppression Alert: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          SLACK_WEBHOOK_URL: ${{ secrets.SEMGREP_SLACK_WEBHOOK }}
+
+      - name: Run Scan
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        run: semgrep ci --code --max-target-bytes 50000000
+
+      - name: Fail if an Invalid Suppression is Found
+        if: env.INVALID_SUPPRESSION_FOUND == 1
+        run: exit 1
