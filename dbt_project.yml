@@ -34,3 +34,4 @@ models:
     # Config indicated by + and applies to all files under models/example/
     example:
       +materialized: view
+      +post-hook: "ALTER TABLE {{ this }} OWNER TO `AG - DataLake - US_EAST - Persona - PDE_Data_Engineer_Platform`"
