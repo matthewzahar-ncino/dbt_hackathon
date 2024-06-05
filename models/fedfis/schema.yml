@@ -1,3 +1,12 @@
 version: 2
 
-# models:
+models:
+  - name: bank_financials_quarterly_reports_original_names
+    description: "bank_financials_quarterly_reports with gold map applied"
+    columns:
+      - name: RSSD9001
+        description: "The primary key for this table"
+        data_tests:
+          - not_null:
+              config:
+                store_failures: true  # always store failures
