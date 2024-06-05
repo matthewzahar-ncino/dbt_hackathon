@@ -10,3 +10,21 @@ models:
           - not_null:
               config:
                 store_failures: true  # always store failures
+  - name: bank_financials_latest_quarter_original_names
+    description: "displays the latest reported quarter for bank financials with original names"
+    columns:
+      - name: RSSD9001
+        description: "The primary key for this table"
+        data_tests:
+          - not_null:
+              config:
+                store_failures: true  # always store failures
+  - name: bank_financials_latest_quarter_friendly_names
+    description: "displays the latest reported quarter for bank financials with friendly names"
+    columns:
+      - name: RSSD9001
+        description: "The primary key for this table"
+        data_tests:
+          - not_null:
+              config:
+                store_failures: true  # always store failures
