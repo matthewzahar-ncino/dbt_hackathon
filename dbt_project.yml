@@ -36,6 +36,7 @@ models:
       +materialized: view
     fedfis:
       +materialized: view
+      +file_format: delta
       +post-hook: "ALTER TABLE {{ this }} OWNER TO `AG - DataLake - US_EAST_QA - Persona - PDE_Data_Engineer_Platform`"
 
 seeds:

@@ -1,4 +1,4 @@
-{% macro internal_columns() %}
+{%- macro internal_columns() -%}
     ,internal_uai0060_data_datetime
     ,internal_uai0060_year
     ,internal_uai0060_day
@@ -7,4 +7,4 @@
     ,internal_uai0060_account
     ,internal_uai0060_month
     ,internal_uai0060_region
-{% endmacro %}
+{%- endmacro -%}
