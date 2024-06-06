@@ -32,8 +32,6 @@ clean-targets:         # directories to be removed by `dbt clean`
 models:
   ncino_hackathon:
     # Config indicated by + and applies to all files under models/example/
-    example:
-      +materialized: view
     fedfis:
       +materialized: view
       +file_format: delta
