@@ -5,6 +5,4 @@ sources:
     database: qa_silver
     schema: fedfis
     tables:
-      - name: bank_financials_quarterly_reports
-      - name: prime_reg
-      
+      - name: bank_financials_quarterly_reports      
